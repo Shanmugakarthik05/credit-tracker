@@ -1,125 +1,179 @@
-
-
 export default function DeveloperCard() {
   return (
     <>
-      {/* Inject keyframes globally via a style tag */}
       <style>{`
-        @keyframes holo-shift {
+        @keyframes holo-bg {
           0%   { background-position: 0% 50%; }
           50%  { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+        @keyframes holo-shine {
+          0%   { opacity: 0; transform: translateX(-100%) rotate(25deg); }
+          30%  { opacity: 0.5; }
+          70%  { opacity: 0.5; }
+          100% { opacity: 0; transform: translateX(300%) rotate(25deg); }
+        }
         @keyframes card-float {
-          0%, 100% { transform: translateY(0px) rotate(-1deg); }
-          50%       { transform: translateY(-6px) rotate(1deg); }
+          0%, 100% { transform: translateY(0px); }
+          50%       { transform: translateY(-5px); }
         }
-        @keyframes shine-sweep {
-          0%   { left: -100%; opacity: 0; }
-          20%  { opacity: 0.6; }
-          100% { left: 200%; opacity: 0; }
+        .dev-id-card {
+          animation: card-float 5s ease-in-out infinite;
         }
-        @keyframes dot-pulse {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0.3; }
-        }
-        .dev-card-wrap {
-          animation: card-float 4s ease-in-out infinite;
-        }
-        .dev-card-border {
+        .holo-bg {
           background: linear-gradient(
-            135deg,
-            #ff0080, #ff6b35, #ffe600, #00ff88,
-            #00cfff, #a855f7, #ff0080
+            125deg,
+            #f0c0ff 0%,
+            #c0e8ff 15%,
+            #b0ffdc 30%,
+            #ffe8a0 45%,
+            #ffc0cb 60%,
+            #c0c8ff 75%,
+            #f0c0ff 90%,
+            #b0ffdc 100%
           );
           background-size: 400% 400%;
-          animation: holo-shift 4s ease infinite;
+          animation: holo-bg 6s ease infinite;
         }
-        .dev-card-shine::after {
-          content: '';
+        .holo-shine {
           position: absolute;
-          top: 0; bottom: 0;
-          width: 60px;
+          inset: 0;
           background: linear-gradient(
-            105deg,
-            transparent 20%,
-            rgba(255,255,255,0.35) 50%,
-            transparent 80%
+            115deg,
+            transparent 30%,
+            rgba(255,255,255,0.55) 50%,
+            transparent 70%
           );
-          filter: blur(4px);
-          animation: shine-sweep 3.5s ease-in-out infinite;
+          width: 80px;
+          animation: holo-shine 4s ease-in-out infinite;
         }
-        .dev-status-dot {
-          animation: dot-pulse 2s ease-in-out infinite;
+        .barcode-line {
+          display: inline-block;
+          height: 28px;
+          background: #1a1a1a;
+          margin-right: 1px;
+          vertical-align: bottom;
         }
       `}</style>
 
       <div className="flex justify-center">
-        <div className="dev-card-wrap cursor-default select-none">
+        <div className="dev-id-card cursor-default select-none">
+          {/* Outer border / card frame */}
+          <div className="holo-bg relative overflow-hidden rounded-2xl shadow-2xl p-[3px]" style={{ width: '300px' }}>
 
-          {/* Rainbow holographic border */}
-          <div className="dev-card-border p-[2px] rounded-2xl shadow-2xl">
+            {/* Shine sweep */}
+            <div className="holo-shine" />
 
-            {/* Card body */}
-            <div className="relative dev-card-shine overflow-hidden rounded-[14px] bg-[#0d1117] w-72">
+            {/* Inner card face */}
+            <div className="relative bg-white/10 backdrop-blur-sm rounded-[14px] p-5 overflow-hidden"
+                 style={{ background: 'rgba(255,255,255,0.25)' }}>
 
-              {/* Top coloured strip */}
-              <div className="h-2 w-full bg-gradient-to-r from-violet-600 via-indigo-500 to-cyan-400" />
+              {/* Top row: Title + Globe */}
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="text-[13px] font-black text-gray-900 leading-none tracking-wide uppercase">Developer</p>
+                  <p className="text-[13px] font-black text-gray-900 leading-none tracking-wide uppercase">Credit</p>
+                </div>
+                {/* Globe icon SVG */}
+                <svg className="w-8 h-8 text-gray-800 opacity-70" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" />
+                </svg>
+              </div>
 
-              {/* Card content */}
-              <div className="px-5 py-4 flex flex-col gap-3">
+              {/* Divider */}
+              <div className="w-full h-px bg-gray-800/30 mb-4" />
 
-                {/* Header row */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold tracking-[0.2em] text-slate-500 uppercase">
-                    Developer ID
-                  </span>
-                  <span className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium">
-                    <span className="dev-status-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                    Active
-                  </span>
+              {/* Main content: photo + details */}
+              <div className="flex gap-4">
+                {/* Photo box */}
+                <div className="flex-shrink-0 w-[90px] h-[105px] rounded-lg overflow-hidden border-2 border-white/50 shadow-md bg-gradient-to-b from-slate-700 to-slate-900 flex items-end justify-center">
+                  {/* Silhouette avatar drawn in SVG (anime/hoodie style like the reference) */}
+                  <svg viewBox="0 0 90 105" width="90" height="105" className="absolute" style={{position:'relative'}}>
+                    {/* Background */}
+                    <rect width="90" height="105" fill="#1e293b"/>
+                    {/* Body / hoodie */}
+                    <ellipse cx="45" cy="118" rx="38" ry="30" fill="#1e1e1e"/>
+                    <path d="M20 85 Q45 70 70 85 Q72 95 75 115 L15 115 Q18 95 20 85Z" fill="#111827"/>
+                    {/* Neck */}
+                    <rect x="38" y="62" width="14" height="18" rx="4" fill="#f5d0a9"/>
+                    {/* Head */}
+                    <ellipse cx="45" cy="52" rx="20" ry="22" fill="#f5d0a9"/>
+                    {/* Hair */}
+                    <ellipse cx="45" cy="35" rx="21" ry="14" fill="#1a1a1a"/>
+                    <path d="M25 42 Q24 55 27 62 Q26 50 28 45Z" fill="#1a1a1a"/>
+                    <path d="M65 42 Q66 55 63 62 Q64 50 62 45Z" fill="#1a1a1a"/>
+                    <path d="M30 38 Q32 28 45 27 Q58 28 60 38 Q55 32 45 31 Q35 32 30 38Z" fill="#111"/>
+                    {/* Mask */}
+                    <rect x="31" y="56" width="28" height="16" rx="5" fill="#111827"/>
+                    {/* Eyes */}
+                    <ellipse cx="38" cy="50" rx="4" ry="4.5" fill="#1a1a1a"/>
+                    <ellipse cx="52" cy="50" rx="4" ry="4.5" fill="#1a1a1a"/>
+                    <ellipse cx="37" cy="49" rx="1.5" ry="1.5" fill="white" opacity="0.6"/>
+                    <ellipse cx="51" cy="49" rx="1.5" ry="1.5" fill="white" opacity="0.6"/>
+                  </svg>
                 </div>
 
-                {/* Avatar + name block */}
-                <div className="flex items-center gap-4">
-                  {/* Holographic avatar */}
-                  <div className="relative flex-shrink-0">
-                    <div className="dev-card-border w-14 h-14 rounded-xl p-[2px]">
-                      <div className="w-full h-full rounded-[10px] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                        <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-br from-violet-400 via-cyan-300 to-indigo-400">
-                          SK
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Name & dept */}
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest leading-none">
-                      Developed by
-                    </p>
-                    <p className="text-sm font-black text-white leading-tight tracking-wide truncate">
+                {/* Info fields */}
+                <div className="flex flex-col justify-between flex-1 py-1">
+                  <div>
+                    <p className="text-[8px] font-bold text-gray-700 tracking-widest uppercase leading-none">Name</p>
+                    <p className="text-[10px] font-black text-gray-900 uppercase tracking-wide leading-tight mt-0.5">
                       SHANMUGAKARTHIK G
                     </p>
-                    <p className="text-[11px] text-slate-400 leading-none">
-                      B.Tech — Information Technology
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-bold text-gray-700 tracking-widest uppercase leading-none">Role</p>
+                    <p className="text-[10px] font-black text-gray-900 uppercase tracking-wide leading-tight mt-0.5">
+                      Full Stack Developer
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-bold text-gray-700 tracking-widest uppercase leading-none">Dept</p>
+                    <p className="text-[10px] font-black text-gray-900 uppercase tracking-wide leading-tight mt-0.5">
+                      B.Tech — Info Tech
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-bold text-gray-700 tracking-widest uppercase leading-none">ID</p>
+                    <p className="text-[10px] font-black text-gray-900 uppercase tracking-wide leading-tight mt-0.5">
+                      DEV-2024-SKG
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-bold text-gray-700 tracking-widest uppercase leading-none">Valid Thru</p>
+                    <p className="text-[10px] font-black text-gray-900 uppercase tracking-wide leading-tight mt-0.5">
+                      12/31/2026
                     </p>
                   </div>
                 </div>
+              </div>
 
-                {/* Divider */}
-                <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+              {/* Bottom row: barcode + signature */}
+              <div className="flex items-end justify-between mt-4">
+                {/* Barcode */}
+                <div className="flex items-end gap-[1px]">
+                  {[3,1,4,1,5,2,3,2,1,4,2,3,1,2,4,1,3,2,1,4,3,1,2,3,1,2,3,1].map((w, i) => (
+                    <span
+                      key={i}
+                      className="barcode-line"
+                      style={{ width: `${w * 1.3}px`, height: i % 5 === 0 ? '32px' : '24px' }}
+                    />
+                  ))}
+                </div>
 
-                {/* Bottom row — decorative chip pattern */}
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1">
-                    {['bg-violet-500', 'bg-indigo-500', 'bg-cyan-500', 'bg-emerald-500'].map((c, i) => (
-                      <div key={i} className={`w-1.5 h-4 rounded-sm ${c} opacity-70`} />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-slate-600 font-mono tracking-widest">
-                    2024 • SKCG
-                  </span>
+                {/* Signature + Authorized */}
+                <div className="flex flex-col items-end">
+                  <svg width="80" height="30" viewBox="0 0 80 30">
+                    <path d="M5 22 C15 8, 25 5, 35 15 C42 22, 50 8, 60 12 C68 15, 73 10, 78 18"
+                      fill="none" stroke="#1a1a2e" strokeWidth="1.8"
+                      strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M35 15 C37 20, 40 25, 43 22"
+                      fill="none" stroke="#1a1a2e" strokeWidth="1.5"
+                      strokeLinecap="round"/>
+                  </svg>
+                  <div className="w-full h-px bg-gray-800/40 mb-1" />
+                  <p className="text-[8px] font-bold text-gray-700 tracking-widest uppercase">Authorized</p>
                 </div>
               </div>
             </div>
