@@ -1,3 +1,5 @@
+import avatarImg from '../assets/avatar.jpg';
+
 export default function DeveloperCard() {
   return (
     <>
@@ -8,8 +10,8 @@ export default function DeveloperCard() {
           100% { background-position: 0% 50%; }
         }
         @keyframes card-float {
-          0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
-          50%       { transform: translateY(-7px) rotate(0.5deg); }
+          0%, 100% { transform: translateY(0px); }
+          50%       { transform: translateY(0px); }
         }
         @keyframes shine {
           0%   { left: -120%; opacity: 0; }
@@ -183,89 +185,15 @@ export default function DeveloperCard() {
 
                 {/* LEFT: Avatar */}
                 <div className="flex-shrink-0 flex flex-col gap-2">
-                  {/* Photo */}
+                  {/* Photo — real uploaded avatar */}
                   <div className="rounded-xl overflow-hidden border-2 flex-shrink-0"
                        style={{ width: 120, height: 140, borderColor: 'rgba(120,100,255,0.5)',
-                                boxShadow: '0 0 20px rgba(100,80,255,0.4)' }}>
-                    <svg viewBox="0 0 120 140" width="120" height="140">
-                      {/* Holographic bg for photo */}
-                      <defs>
-                        <linearGradient id="photoBg" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#1a1060"/>
-                          <stop offset="100%" stopColor="#0a0830"/>
-                        </linearGradient>
-                        <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f5d5b0"/>
-                          <stop offset="100%" stopColor="#e8b890"/>
-                        </linearGradient>
-                      </defs>
-                      <rect width="120" height="140" fill="url(#photoBg)"/>
-
-                      {/* Subtle grid lines */}
-                      {[0,1,2,3,4,5,6].map(i => (
-                        <line key={i} x1="0" y1={i*22} x2="120" y2={i*22}
-                              stroke="rgba(100,80,255,0.08)" strokeWidth="1"/>
-                      ))}
-                      {[0,1,2,3,4].map(i => (
-                        <line key={i} x1={i*30} y1="0" x2={i*30} y2="140"
-                              stroke="rgba(100,80,255,0.08)" strokeWidth="1"/>
-                      ))}
-
-                      {/* Body / hoodie */}
-                      <ellipse cx="60" cy="185" rx="55" ry="55" fill="#111827"/>
-                      <path d="M22 108 C35 95 85 95 98 108 C102 118 105 135 106 140 L14 140 C15 135 18 118 22 108Z"
-                            fill="#111822"/>
-                      {/* hoodie pocket seam */}
-                      <path d="M45 125 Q60 120 75 125" stroke="#1e2535" strokeWidth="1.5" fill="none"/>
-                      {/* </> text on hoodie */}
-                      <text x="52" y="138" fill="#3a4570" fontSize="8" fontFamily="monospace" fontWeight="bold">&lt;/&gt;</text>
-
-                      {/* Neck */}
-                      <rect x="50" y="76" width="20" height="24" rx="6" fill="url(#skinGrad)"/>
-
-                      {/* Head */}
-                      <ellipse cx="60" cy="64" rx="27" ry="28" fill="url(#skinGrad)"/>
-
-                      {/* Ears */}
-                      <ellipse cx="33" cy="64" rx="5" ry="7" fill="url(#skinGrad)"/>
-                      <ellipse cx="87" cy="64" rx="5" ry="7" fill="url(#skinGrad)"/>
-
-                      {/* Hair - messy/fluffy */}
-                      <ellipse cx="60" cy="42" rx="28" ry="18" fill="#1a1a1a"/>
-                      <path d="M33 50 Q30 35 38 28 Q46 22 60 20 Q74 22 82 28 Q90 35 87 50 Q80 38 60 36 Q40 38 33 50Z"
-                            fill="#111111"/>
-                      {/* Side hair strands */}
-                      <path d="M33 55 Q28 65 30 78 Q31 68 35 62Z" fill="#111111"/>
-                      <path d="M87 55 Q92 65 90 78 Q89 68 85 62Z" fill="#111111"/>
-                      {/* Front hair tuft */}
-                      <path d="M48 28 Q52 20 60 22 Q55 24 50 32Z" fill="#222"/>
-                      <path d="M60 22 Q68 20 72 28 Q67 24 62 32Z" fill="#1a1a1a"/>
-
-                      {/* Glasses */}
-                      <rect x="38" y="58" width="16" height="11" rx="4" fill="none"
-                            stroke="#4a4060" strokeWidth="1.5"/>
-                      <rect x="66" y="58" width="16" height="11" rx="4" fill="none"
-                            stroke="#4a4060" strokeWidth="1.5"/>
-                      <line x1="54" y1="63" x2="66" y2="63" stroke="#4a4060" strokeWidth="1.5"/>
-                      <line x1="34" y1="63" x2="38" y2="63" stroke="#4a4060" strokeWidth="1.5"/>
-                      <line x1="82" y1="63" x2="86" y2="63" stroke="#4a4060" strokeWidth="1.5"/>
-                      {/* Lens tint */}
-                      <rect x="38.5" y="58.5" width="15" height="10" rx="3.5" fill="rgba(80,60,180,0.15)"/>
-                      <rect x="66.5" y="58.5" width="15" height="10" rx="3.5" fill="rgba(80,60,180,0.15)"/>
-
-                      {/* Eyes behind glasses */}
-                      <ellipse cx="46" cy="63" rx="3.5" ry="4" fill="#2a1a1a"/>
-                      <ellipse cx="74" cy="63" rx="3.5" ry="4" fill="#2a1a1a"/>
-                      <ellipse cx="45" cy="62" rx="1.2" ry="1.2" fill="white" opacity="0.5"/>
-                      <ellipse cx="73" cy="62" rx="1.2" ry="1.2" fill="white" opacity="0.5"/>
-
-                      {/* Mask (black face mask) */}
-                      <path d="M33 72 Q35 68 60 66 Q85 68 87 72 Q88 82 87 88 Q85 94 60 95 Q35 94 33 88 Q32 82 33 72Z"
-                            fill="#0f1117"/>
-                      {/* Mask seam lines */}
-                      <path d="M36 80 Q60 77 84 80" stroke="#1e2535" strokeWidth="1" fill="none"/>
-                      <path d="M36 86 Q60 83 84 86" stroke="#1e2535" strokeWidth="1" fill="none"/>
-                    </svg>
+                                boxShadow: '0 0 20px rgba(100,80,255,0.5)' }}>
+                    <img
+                      src={avatarImg}
+                      alt="Developer Avatar"
+                      style={{ width: 120, height: 140, objectFit: 'cover', objectPosition: 'center top' }}
+                    />
                   </div>
 
                   {/* Clickable barcode */}
@@ -302,7 +230,7 @@ export default function DeveloperCard() {
                     </div>
                     <div>
                       <p className="field-label">ID</p>
-                      <p className="field-value">DEV-2024-SKG</p>
+                      <p className="field-value">DEV-2024-SK</p>
                     </div>
 
                     <div className="holo-bar w-full h-px opacity-40 rounded-full" />
