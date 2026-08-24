@@ -1,55 +1,54 @@
 import os
-from datetime import datetime, timedelta
-from typing import Optional
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+import jwt
+from jwt import PyJWKClient
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-from . import database, models, schemas
 
 load_dotenv()
 
-# In production, use environment variables and a strong secret key
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-for-local-dev-only")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7)) # 7 days
+# We use the provided Neon Auth URL to fetch the JWKS
+NEON_AUTH_URL = os.getenv("NEON_AUTH_URL", "https://ep-royal-sound-b37l2mgc.neonauth.c-4.ap-southeast-1.aws.neon.tech/neondb/auth")
+JWKS_URL = f"{NEON_AUTH_URL}/.well-known/jwks.json"
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+# PyJWKClient automatically fetches and caches the public keys
+jwks_client = PyJWKClient(JWKS_URL)
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+# We no longer need our custom login endpoint because Neon Auth handles it.
+# We just use this scheme to extract the Bearer token from the header.
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
+def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    if not token:
+        raise credentials_exception
+
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        # Get the signing key from the JWKS based on the token's header
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        
+        # Decode the token using the public key
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256", "ES256"],
+            # If audience checking is required by Neon, we'd add audience="our-audience"
+            options={"verify_aud": False} 
+        )
+        
+        user_id: str = payload.get("sub")
+        if user_id is None:
             raise credentials_exception
-        token_data = schemas.TokenData(email=email)
-    except JWTError:
+            
+        # Return a dictionary (or an object) representing the user
+        return {"id": user_id, "email": payload.get("email")}
+        
+    except Exception as e:
+        # Catch any PyJWT error (ExpiredSignatureError, InvalidTokenError, etc)
+        print(f"JWT Verification failed: {e}")
         raise credentials_exception
-    user = db.query(models.User).filter(models.User.email == token_data.email).first()
-    if user is None:
-        raise credentials_exception
-    return user
