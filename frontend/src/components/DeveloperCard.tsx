@@ -209,7 +209,7 @@ export default function DeveloperCard() {
                     }}>
                       <QRCodeSVG
                         value="https://github.com/Shanmugakarthik05"
-                        size={106}
+                        size={72}
                         bgColor="transparent"
                         fgColor="#a78bff"
                         level="M"
