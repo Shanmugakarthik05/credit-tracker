@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, TrendingUp, Award } from 'lucide-react';
+import DeveloperCard from '../components/DeveloperCard';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -201,22 +202,8 @@ export default function Login() {
           </p>
 
           {/* Developer Credit */}
-          <div className="mt-8 flex justify-center">
-            <div className="relative group cursor-default">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl blur opacity-40 group-hover:opacity-70 transition duration-500 animate-pulse" />
-              <div className="relative flex items-center gap-3 bg-slate-900/90 border border-slate-700/60 rounded-2xl px-5 py-3 backdrop-blur-sm">
-                <div className="flex flex-col items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0">
-                  <span className="text-white text-xs font-bold">SK</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-slate-400 leading-none mb-0.5">Developed by</span>
-                  <span className="text-sm font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-none">
-                    SHANMUGAKARTHIK G
-                  </span>
-                  <span className="text-xs text-slate-500 mt-0.5 leading-none">B.Tech — Information Technology</span>
-                </div>
-              </div>
-            </div>
+          <div className="mt-8">
+            <DeveloperCard />
           </div>
         </div>
       </div>
