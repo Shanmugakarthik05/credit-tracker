@@ -1,52 +1,29 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authClient } from '../auth-client';
+import React, { createContext, useContext, useState } from 'react';
 
 interface AuthContextType {
   token: string | null;
-  isAuthenticated: boolean;
+  login: (token: string) => void;
   logout: () => void;
-  isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
 
-  useEffect(() => {
-    // Better Auth / Neon Auth handles sessions via cookies automatically,
-    // but we can also retrieve the current session token if we need to pass it in headers manually,
-    // though the SDK fetch client usually does this. For compatibility with our existing Axios/fetch setup:
-    const checkSession = async () => {
-      try {
-        const { data, error } = await authClient.getSession();
-        if (data && !error) {
-           // We might need a raw token for FastAPI, or rely on cookies.
-           // For now, let's just set a dummy token so the app knows we're authenticated
-           setToken("neon-auth-active"); 
-        } else {
-           setToken(null);
-        }
-      } catch (e) {
-        setToken(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkSession();
-  }, []);
+  const login = (newToken: string) => {
+    setToken(newToken);
+    localStorage.setItem('token', newToken);
+  };
 
-  const logout = async () => {
-    setIsLoading(true);
-    await authClient.signOut();
+  const logout = () => {
     setToken(null);
-    setIsLoading(false);
+    localStorage.removeItem('token');
   };
 
   return (
-    <AuthContext.Provider value={{ token, isAuthenticated: !!token, logout, isLoading }}>
+    <AuthContext.Provider value={{ token, login, logout, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

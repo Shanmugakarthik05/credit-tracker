@@ -66,14 +66,25 @@ class CurriculumCourse(Base):
     matches = relationship("CourseMatch", back_populates="curriculum_course")
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+
+    student = relationship("Student", back_populates="user", uselist=False)
+
+
 class Student(Base):
     __tablename__ = "students"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, unique=True, index=True) # Now points to Neon Auth UUID
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     name = Column(String, index=True)
     curriculum_id = Column(Integer, ForeignKey("curriculums.id"), nullable=True)
     
+    user = relationship("User", back_populates="student")
     curriculum = relationship("Curriculum", back_populates="students")
     courses = relationship("StudentCourse", back_populates="student", cascade="all, delete-orphan")
 

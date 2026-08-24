@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from typing import List
 import os
 import shutil
@@ -27,29 +26,29 @@ app.add_middleware(
 def read_root():
     return {"message": "Welcome to College Credit Tracker API"}
 
-@app.get("/api/migrate-db")
-def migrate_database(db: Session = Depends(database.get_db)):
-    try:
-        # Drop the foreign key constraint on students if it exists (usually students_user_id_fkey)
-        db.execute(text("ALTER TABLE students DROP CONSTRAINT IF EXISTS students_user_id_fkey;"))
-        
-        # Alter the column type to allow Neon UUIDs (String)
-        db.execute(text("ALTER TABLE students ALTER COLUMN user_id TYPE VARCHAR(255);"))
-        
-        # Drop the old users table since it is no longer used (managed by Neon Auth)
-        db.execute(text("DROP TABLE IF EXISTS users;"))
-        
-        db.commit()
-        return {"message": "Database migrated successfully for Neon Auth"}
-    except Exception as e:
-        db.rollback()
-        return {"error": str(e)}
+@app.post("/api/auth/register", response_model=schemas.User)
+def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    hashed_password = auth.get_password_hash(user.password)
+    db_user = models.User(email=user.email, hashed_password=hashed_password)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
-# Authentication is now handled by Neon Auth on the frontend.
-# The token is sent to the backend and verified via auth.get_current_user
+@app.post("/api/auth/login", response_model=schemas.Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/api/extract/curriculum")
-async def extract_curriculum(file: UploadFile = File(...), current_user: dict = Depends(auth.get_current_user)):
+async def extract_curriculum(file: UploadFile = File(...), current_user: models.User = Depends(auth.get_current_user)):
     temp_file = f"temp_{file.filename}"
     with open(temp_file, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -62,7 +61,7 @@ async def extract_curriculum(file: UploadFile = File(...), current_user: dict = 
     return data
 
 @app.post("/api/extract/online-curriculum")
-async def extract_online_curriculum(file: UploadFile = File(...), current_user: dict = Depends(auth.get_current_user)):
+async def extract_online_curriculum(file: UploadFile = File(...), current_user: models.User = Depends(auth.get_current_user)):
     temp_file = f"temp_online_{file.filename}"
     with open(temp_file, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -90,8 +89,8 @@ async def extract_online_curriculum(file: UploadFile = File(...), current_user: 
     return data
 
 @app.post("/api/curriculums/online")
-def create_online_curriculum(courses: List[schemas.CurriculumCourseCreate], db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
-    student = db.query(models.Student).filter(models.Student.user_id == current_user["id"]).first()
+def create_online_curriculum(courses: List[schemas.CurriculumCourseCreate], db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    student = db.query(models.Student).filter(models.Student.user_id == current_user.id).first()
     if not student or not student.curriculum_id:
         raise HTTPException(status_code=404, detail="Student or Curriculum not found")
 
@@ -134,8 +133,8 @@ def create_online_curriculum(courses: List[schemas.CurriculumCourseCreate], db: 
     return {"message": "Online curriculum saved successfully"}
 
 @app.post("/api/extract/result")
-async def extract_result(file: UploadFile = File(...), db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
-    student = db.query(models.Student).filter(models.Student.user_id == current_user["id"]).first()
+async def extract_result(file: UploadFile = File(...), db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    student = db.query(models.Student).filter(models.Student.user_id == current_user.id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student profile not found")
         
@@ -249,7 +248,7 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
             os.remove(temp_file)
 
 @app.post("/api/curriculums", response_model=schemas.Curriculum)
-def create_curriculum(curriculum: schemas.CurriculumCreate, db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
+def create_curriculum(curriculum: schemas.CurriculumCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     db_curriculum = models.Curriculum(
         department=curriculum.department,
         program=curriculum.program,
@@ -293,29 +292,25 @@ def create_curriculum(curriculum: schemas.CurriculumCreate, db: Session = Depend
     return db_curriculum
 
 @app.get("/api/curriculums", response_model=List[schemas.Curriculum])
-def get_curriculums(skip: int = 0, limit: int = 10, db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
+def get_curriculums(skip: int = 0, limit: int = 10, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Curriculum).offset(skip).limit(limit).all()
 
-@app.get("/api/student/me")
-def get_student_profile(db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
-    # current_user is now a dict containing the Neon Auth UUID
-    user_id = current_user["id"]
-    student = db.query(models.Student).filter(models.Student.user_id == user_id).first()
-    if not student:
-        # Auto-create student record for the Neon Auth user if it doesn't exist
-        student = models.Student(
-            user_id=user_id,
-            name=current_user.get("email", "").split("@")[0]
-        )
-        db.add(student)
-        db.commit()
-        db.refresh(student)
-        
-    return student
+@app.post("/api/students")
+def create_student(name: str, curriculum_id: int, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    db_student = db.query(models.Student).filter(models.Student.user_id == current_user.id).first()
+    if db_student:
+        db_student.curriculum_id = curriculum_id
+        db_student.name = name
+    else:
+        db_student = models.Student(name=name, curriculum_id=curriculum_id, user_id=current_user.id)
+        db.add(db_student)
+    db.commit()
+    db.refresh(db_student)
+    return db_student
 
 @app.post("/api/results")
-def create_result(results: List[schemas.StudentCourseCreate], db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
-    student = db.query(models.Student).filter(models.Student.user_id == current_user["id"]).first()
+def create_result(results: List[schemas.StudentCourseCreate], db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    student = db.query(models.Student).filter(models.Student.user_id == current_user.id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student profile not found")
         
@@ -350,7 +345,7 @@ def create_result(results: List[schemas.StudentCourseCreate], db: Session = Depe
     return {"message": "Results saved successfully"}
 
 @app.post("/api/matches/resolve")
-def resolve_match(match_id: int, category_id: int, db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
+def resolve_match(match_id: int, category_id: int, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     # Resolves a REVIEW_REQUIRED match to ACCEPTED with a specific category
     match = db.query(models.CourseMatch).filter(models.CourseMatch.id == match_id).first()
     if not match:
@@ -369,8 +364,8 @@ def resolve_match(match_id: int, category_id: int, db: Session = Depends(databas
     return {"message": "Match resolved successfully"}
 
 @app.get("/api/dashboard/stats")
-def get_dashboard_stats(db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
-    student = db.query(models.Student).filter(models.Student.user_id == current_user["id"]).first()
+def get_dashboard_stats(db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    student = db.query(models.Student).filter(models.Student.user_id == current_user.id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student profile not found")
 
@@ -429,8 +424,8 @@ def get_dashboard_stats(db: Session = Depends(database.get_db), current_user: di
     }
 
 @app.get("/api/dashboard/semesters")
-def get_dashboard_semesters(db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
-    student = db.query(models.Student).filter(models.Student.user_id == current_user["id"]).first()
+def get_dashboard_semesters(db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    student = db.query(models.Student).filter(models.Student.user_id == current_user.id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student profile not found")
 
@@ -524,8 +519,8 @@ def get_dashboard_semesters(db: Session = Depends(database.get_db), current_user
     return result
 
 @app.delete("/api/student/reset")
-def reset_student_data(db: Session = Depends(database.get_db), current_user: dict = Depends(auth.get_current_user)):
-    student = db.query(models.Student).filter(models.Student.user_id == current_user["id"]).first()
+def reset_student_data(db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    student = db.query(models.Student).filter(models.Student.user_id == current_user.id).first()
     if student:
         db.delete(student)
         db.commit()
@@ -557,7 +552,7 @@ TRAINING_DATA = {
 }
 
 @app.post("/api/chat", response_model=schemas.ChatResponse)
-def chat_with_bot(request: schemas.ChatRequest, current_user: dict = Depends(auth.get_current_user)):
+def chat_with_bot(request: schemas.ChatRequest, current_user: models.User = Depends(auth.get_current_user)):
     user_msg = request.message.lower().strip()
     
     # We compare the user message against all the keys (which contain various keywords/phrases)

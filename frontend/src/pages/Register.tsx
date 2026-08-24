@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import { authClient } from '../auth-client';
 
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
   let score = 0;
@@ -33,17 +32,19 @@ export default function Register() {
     setIsLoading(true);
     setError('');
     try {
-      const { data, error } = await authClient.signUp.email({
-        email,
-        password,
-        name: email.split('@')[0], // Provide a default name
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${apiUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
-        setError(error.message || 'Registration failed');
-      } else {
+      if (res.ok) {
         setSuccess(true);
         setTimeout(() => navigate('/login'), 1600);
+      } else {
+        const errData = await res.json();
+        setError(errData.detail || 'Registration failed');
       }
     } catch {
       setError('Connection error. Please try again.');

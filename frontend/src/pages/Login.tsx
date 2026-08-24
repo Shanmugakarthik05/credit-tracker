@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, TrendingUp, Award } from 'lucide-react';
 import DeveloperCard from '../components/DeveloperCard';
-import { authClient } from '../auth-client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -19,16 +18,24 @@ export default function Login() {
     setIsLoading(true);
     setError('');
     try {
-      const { data, error } = await authClient.signIn.email({
-        email,
-        password
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${apiUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData,
       });
 
-      if (error) {
-        setError(error.message || 'Invalid credentials. Please try again.');
+      if (res.ok) {
+        const data = await res.json();
+        login(data.access_token);
+        navigate('/');
       } else {
-        // Force context to recognize we're authenticated
-        window.location.href = '/'; 
+        const errData = await res.json();
+        setError(errData.detail || 'Invalid credentials. Please try again.');
       }
     } catch {
       setError('Connection error. Please try again.');
