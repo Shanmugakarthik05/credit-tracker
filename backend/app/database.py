@@ -6,7 +6,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./credit_tracker.db")
+# Get the URL from Vercel's environment
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+
+# If we are on Vercel but missing the URL, throw a clear error
+if os.getenv("VERCEL") and not SQLALCHEMY_DATABASE_URL:
+    raise ValueError("CRITICAL ERROR: DATABASE_URL environment variable is missing in Vercel Settings!")
+
+# Fallback for local development
+if not SQLALCHEMY_DATABASE_URL:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./credit_tracker.db"
+
+# Fix old postgres:// strings if necessary
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, 
