@@ -49,7 +49,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @app.post("/api/extract/curriculum")
 async def extract_curriculum(file: UploadFile = File(...), current_user: models.User = Depends(auth.get_current_user)):
-    temp_file = f"temp_{file.filename}"
+    temp_file = f"/tmp/temp_{file.filename}"
     with open(temp_file, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
@@ -62,7 +62,7 @@ async def extract_curriculum(file: UploadFile = File(...), current_user: models.
 
 @app.post("/api/extract/online-curriculum")
 async def extract_online_curriculum(file: UploadFile = File(...), current_user: models.User = Depends(auth.get_current_user)):
-    temp_file = f"temp_online_{file.filename}"
+    temp_file = f"/tmp/temp_online_{file.filename}"
     with open(temp_file, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
@@ -138,7 +138,7 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
     if not student:
         raise HTTPException(status_code=404, detail="Student profile not found")
         
-    temp_file = f"temp_{file.filename}"
+    temp_file = f"/tmp/temp_{file.filename}"
     with open(temp_file, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
