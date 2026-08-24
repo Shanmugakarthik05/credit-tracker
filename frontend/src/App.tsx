@@ -481,6 +481,25 @@ function App() {
       <CalculationBreakdownModal isOpen={activeBreakdown !== null} onClose={() => setActiveBreakdown(null)} semesterData={activeBreakdown} />
 
       <Chatbot />
+
+      {/* Developer Credit Footer */}
+      <footer className="py-6 px-8 flex justify-center">
+        <div className="relative group cursor-default">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500 animate-pulse" />
+          <div className="relative flex items-center gap-3 bg-slate-900/90 border border-slate-700/60 rounded-2xl px-6 py-3 backdrop-blur-sm">
+            <div className="flex flex-col items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0 shadow-lg shadow-indigo-500/30">
+              <span className="text-white text-sm font-bold">SK</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400 leading-none mb-0.5">Developed by</span>
+              <span className="text-sm font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-none">
+                SHANMUGAKARTHIK G
+              </span>
+              <span className="text-xs text-slate-500 mt-0.5 leading-none">B.Tech — Information Technology</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
