@@ -1,4 +1,5 @@
 import avatarImg from '../assets/avatar.jpg';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function DeveloperCard() {
   return (
@@ -196,21 +197,26 @@ export default function DeveloperCard() {
                     />
                   </div>
 
-                  {/* Clickable barcode */}
+                  {/* Clickable QR Code */}
                   <a href="https://github.com/Shanmugakarthik05" target="_blank" rel="noopener noreferrer"
-                     className="barcode-wrap" title="Open GitHub">
-                    <div className="flex items-end gap-[1.5px]" style={{ height: 30 }}>
-                      {[2,1,3,1,2,4,1,2,1,3,2,1,3,1,2,1,4,1,2,3,1,2,1,3,1,2,1,3,2,1].map((w, i) => (
-                        <div key={i} style={{
-                          width: w * 1.5,
-                          height: i % 4 === 0 ? 30 : i % 3 === 0 ? 24 : 20,
-                          background: `hsl(${240 + i * 8}, 70%, 65%)`,
-                          borderRadius: 1,
-                          alignSelf: 'flex-end'
-                        }}/>
-                      ))}
+                     className="barcode-wrap flex flex-col items-center gap-1" title="Open GitHub">
+                    <div style={{
+                      padding: 4,
+                      background: 'rgba(255,255,255,0.06)',
+                      borderRadius: 8,
+                      border: '1px solid rgba(120,100,255,0.3)',
+                      boxShadow: '0 0 10px rgba(100,80,255,0.3)'
+                    }}>
+                      <QRCodeSVG
+                        value="https://github.com/Shanmugakarthik05"
+                        size={106}
+                        bgColor="transparent"
+                        fgColor="#a78bff"
+                        level="M"
+                        includeMargin={false}
+                      />
                     </div>
-                    <p style={{ fontSize: 7, color: '#7ec8ff', letterSpacing: '0.15em', marginTop: 2, textAlign: 'center' }}>
+                    <p style={{ fontSize: 7, color: '#7ec8ff', letterSpacing: '0.15em', textAlign: 'center' }}>
                       SCAN TO VISIT GITHUB
                     </p>
                   </a>
