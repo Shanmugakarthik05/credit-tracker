@@ -45,8 +45,8 @@ function App() {
   const handleReset = async () => {
     if (confirm('Are you sure you want to reset all your data? This will delete all uploaded results and curriculum progress.')) {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const res = await fetch(`${apiUrl}/api/student/reset`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await fetch(`${apiUrl}/api/student/reset`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
         });
