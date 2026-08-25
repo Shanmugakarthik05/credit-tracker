@@ -42,10 +42,16 @@ export const SubjectMappingScreen: React.FC<SubjectMappingScreenProps> = ({ resu
 
   const handleResolve = (index: number, categoryId: number, courseId: number) => {
     const updated = [...localResults];
-    updated[index].match.review_status = "ACCEPTED";
-    updated[index].match.match_type = "MANUAL";
-    updated[index].match.category_id = categoryId;
-    updated[index].match.curriculum_course_id = courseId;
+    updated[index] = {
+      ...updated[index],
+      match: {
+        ...updated[index].match,
+        review_status: "ACCEPTED",
+        match_type: "MANUAL",
+        category_id: categoryId,
+        curriculum_course_id: courseId
+      }
+    };
     setLocalResults(updated);
   };
 

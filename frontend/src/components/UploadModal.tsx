@@ -91,6 +91,18 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, title
         if (endpoint === 'result' && selectedSemester && Array.isArray(data)) {
           data = data.map((item: any) => ({ ...item, semester: `Semester ${selectedSemester}` }));
         }
+        
+        // Re-fetch curriculum categories to ensure we have any newly auto-created categories (e.g. Others, Mandatory)
+        if (endpoint === 'result') {
+          const statsRes = await fetch(`${apiUrl}/api/dashboard/stats`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (statsRes.ok) {
+            const statsData = await statsRes.json();
+            if (statsData?.categories) setCurriculumCategories(statsData.categories);
+          }
+        }
+        
         setParsedData(data);
       } else {
         const err = await res.json();
