@@ -225,6 +225,16 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
             models.CurriculumCategory.name.ilike("%Others%")
         ).first()
 
+        oe_category = db.query(models.CurriculumCategory).filter(
+            models.CurriculumCategory.curriculum_id == student.curriculum_id,
+            models.CurriculumCategory.name.ilike("%Open Elective%")
+        ).first()
+
+        minor_category = db.query(models.CurriculumCategory).filter(
+            models.CurriculumCategory.curriculum_id == student.curriculum_id,
+            models.CurriculumCategory.name.ilike("%Minor%")
+        ).first()
+
         mapped_results = []
         for raw in raw_results:
             matched, confidence, possible_matches = pdf_extractor.fuzzy_match_subject(raw["raw_name"], raw["raw_code"], curr_course_dicts)
@@ -293,6 +303,40 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
                 # Always force the category to mandatory for these
                 matched_category_id = mandatory_category.id
                 raw_credits = 0 # Force 0 credits for known mandatory courses
+                
+            elif matched_category_id is None:
+                # Predictive fallback based on code pattern
+                code_upper = raw["raw_code"].upper()
+                if code_upper.startswith("O") and len(code_upper) >= 6:
+                    if not oe_category:
+                        oe_category = models.CurriculumCategory(
+                            curriculum_id=student.curriculum_id,
+                            name="Open Electives",
+                            required_credits=12,
+                            description="Auto-generated category for Open Electives"
+                        )
+                        db.add(oe_category)
+                        db.commit()
+                        db.refresh(oe_category)
+                    
+                    matched_category_id = oe_category.id
+                    match_type = models.MatchType.MANUAL
+                    review_status = models.ReviewStatus.ACCEPTED
+                elif code_upper.startswith("M") and len(code_upper) >= 6 and not _is_mandatory_by_code:
+                    if not minor_category:
+                        minor_category = models.CurriculumCategory(
+                            curriculum_id=student.curriculum_id,
+                            name="Minor Courses",
+                            required_credits=18,
+                            description="Auto-generated category for Minor Courses"
+                        )
+                        db.add(minor_category)
+                        db.commit()
+                        db.refresh(minor_category)
+                        
+                    matched_category_id = minor_category.id
+                    match_type = models.MatchType.MANUAL
+                    review_status = models.ReviewStatus.ACCEPTED
 
             mapped_results.append({
                 "course_code": raw["raw_code"],
