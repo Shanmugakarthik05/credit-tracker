@@ -21,20 +21,11 @@ function App() {
   const [hasMinorCourse, setHasMinorCourse] = useState<boolean>(
     () => localStorage.getItem('hasMinorCourse') === 'true'
   );
-  const [hasOpenElective, setHasOpenElective] = useState<boolean>(
-    () => localStorage.getItem('hasOpenElective') === 'true'
-  );
 
   const toggleMinorCourse = () => {
     const next = !hasMinorCourse;
     setHasMinorCourse(next);
     localStorage.setItem('hasMinorCourse', String(next));
-  };
-
-  const toggleOpenElective = () => {
-    const next = !hasOpenElective;
-    setHasOpenElective(next);
-    localStorage.setItem('hasOpenElective', String(next));
   };
 
   const fetchStats = React.useCallback(async () => {
@@ -116,31 +107,13 @@ function App() {
               <Upload className="w-4 h-4 text-emerald-400" />
               <span className="hidden lg:inline">Online Curriculum</span>
             </button>
-            {/* Open Elective: optional toggle */}
-            <div className="hidden md:flex items-center gap-2">
-              <button
-                onClick={toggleOpenElective}
-                title={hasOpenElective ? 'Disable Open Elective' : 'I have a separate Open Elective PDF'}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-all duration-200 ${
-                  hasOpenElective
-                    ? 'bg-amber-50 border-amber-300 text-amber-700'
-                    : 'bg-white border-slate-200 text-slate-400 hover:border-amber-200 hover:text-amber-500'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">OE</span>
-                <span className={`w-2 h-2 rounded-full ml-0.5 ${hasOpenElective ? 'bg-amber-500' : 'bg-slate-300'}`} />
-              </button>
-              {hasOpenElective && (
-                <button
-                  onClick={() => setActiveModal('open-elective')}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-300 rounded-xl hover:bg-amber-100 transition-all duration-200"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span className="hidden lg:inline">Upload OE PDF</span>
-                </button>
-              )}
-            </div>
+            <button
+              onClick={() => setActiveModal('open-elective')}
+              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50/50 transition-all duration-200"
+            >
+              <BookOpen className="w-4 h-4 text-amber-400" />
+              <span className="hidden lg:inline">OE PDF</span>
+            </button>
 
             {/* Minor Course: optional toggle */}
             <div className="hidden md:flex items-center gap-2">
