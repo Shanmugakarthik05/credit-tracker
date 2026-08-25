@@ -303,7 +303,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, title
         </div>
 
         {/* ── Footer ───────────────────────────── */}
-        {(!parsedData || endpoint === 'curriculum' || endpoint === 'online-curriculum') && (
+        {(!parsedData || endpoint === 'curriculum' || endpoint === 'online-curriculum' || endpoint === 'open-elective' || endpoint === 'minor-course') && (
           <div className="px-7 py-5 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-3xl">
             <button
               onClick={onClose}
