@@ -189,7 +189,7 @@ def extract_curriculum_from_pdf(file_path: str) -> Dict[str, Any]:
 
 def extract_result_from_pdf(file_path: str) -> List[Dict[str, Any]]:
     results = []
-    subject_code_pattern = re.compile(r"^[A-Z]{2,5}[0-9]{3,6}$")
+    subject_code_pattern = re.compile(r"^[0-9]{0,2}[A-Z]{2,5}[0-9]{3,6}$")
     grade_set = {'O', 'A+', 'A', 'B+', 'B', 'C', 'U', 'F', 'RA', 'W', 'ABSENT', 'AB', 'SA', 'WH', 'I', 'PASS', 'FAIL', 'NE'}
     semester_pattern = re.compile(r'(?:semester|sem)[\s\-:]*(\d+)', re.IGNORECASE)
     fail_grades = {'U', 'F', 'RA', 'W', 'ABSENT', 'FAIL', 'AB', 'SA', 'WH', 'I', 'INCOMPLETE', 'NE'}
