@@ -285,8 +285,7 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
                 matched_category_id = others_category.id
             
             # Auto-map 0-credit courses or known mandatory courses to Mandatory category
-            # NOTE: raw_credits==0 just means PDF extraction failed to read credits — don't use this alone
-            elif _is_mandatory_by_name or _is_mandatory_by_code:
+            elif raw_credits == 0 or _is_mandatory_by_name or _is_mandatory_by_code:
                 if not mandatory_category:
                     mandatory_category = models.CurriculumCategory(
                         curriculum_id=student.curriculum_id,
@@ -304,7 +303,6 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
                 # Always force the category to mandatory for these
                 matched_category_id = mandatory_category.id
                 raw_credits = 0 # Force 0 credits for known mandatory courses
-
                 
             elif matched_category_id is None:
                 # Predictive fallback based on code pattern
@@ -340,20 +338,10 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
                     match_type = models.MatchType.MANUAL
                     review_status = models.ReviewStatus.ACCEPTED
 
-            # Determine final credits: prefer curriculum match > raw PDF > default 3
-            if matched and matched.get("credits", 0) > 0:
-                final_credits = matched["credits"]
-            elif raw_credits > 0:
-                final_credits = raw_credits
-            elif _is_mandatory_by_name or _is_mandatory_by_code:
-                final_credits = 0
-            else:
-                final_credits = 3  # Sensible default when PDF couldn't parse credit column
-
             mapped_results.append({
                 "course_code": raw["raw_code"],
                 "course_name": raw["raw_name"],
-                "credits": final_credits,
+                "credits": matched["credits"] if matched else raw_credits,
                 "grade": raw["grade"],
                 "is_passed": raw["is_passed"],
                 "match": {
@@ -441,18 +429,11 @@ def create_result(results: List[schemas.StudentCourseCreate], db: Session = Depe
         existing = db.query(models.StudentCourse).filter(
             models.StudentCourse.student_id == student.id,
             models.StudentCourse.course_code == res_data.course_code,
+            models.StudentCourse.semester == res_data.semester
         ).first()
         
         if existing:
-            # Update grade if the new upload has a better/different grade (re-appeared student)
-            if existing.grade != res_data.grade:
-                existing.grade = res_data.grade
-                existing.is_passed = res_data.is_passed
-                if res_data.semester:
-                    existing.semester = res_data.semester
-                db.commit()
             continue
-
             
         db_course = models.StudentCourse(
             student_id=student.id,
