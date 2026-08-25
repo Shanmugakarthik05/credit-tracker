@@ -168,7 +168,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, title
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-black text-slate-800">{title}</h2>
-              <p className="text-slate-400 text-sm mt-0.5">Upload a PDF to get started</p>
+              {endpoint === 'open-elective' ? (
+                <p className="text-amber-600 text-xs mt-1.5 font-semibold bg-amber-50 px-2.5 py-1 inline-flex items-center rounded-lg border border-amber-100">
+                  Tip: Only upload this if your Open Electives were NOT in your main Curriculum PDF.
+                </p>
+              ) : endpoint === 'minor-course' ? (
+                <p className="text-rose-600 text-xs mt-1.5 font-semibold bg-rose-50 px-2.5 py-1 inline-flex items-center rounded-lg border border-rose-100">
+                  Tip: Only upload this if you are enrolled in a Minor Degree.
+                </p>
+              ) : (
+                <p className="text-slate-400 text-sm mt-0.5">Upload a PDF to get started</p>
+              )}
             </div>
             <button
               onClick={onClose}
