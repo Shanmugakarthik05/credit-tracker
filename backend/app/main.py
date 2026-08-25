@@ -149,9 +149,16 @@ def save_special_curriculum(courses: List[schemas.CurriculumCourseCreate], categ
     if not student or not student.curriculum_id:
         raise HTTPException(status_code=404, detail="Student or Curriculum not found")
 
+    if "Open" in category_name:
+        search_term = "%Open Elective%"
+    elif "Minor" in category_name:
+        search_term = "%Minor%"
+    else:
+        search_term = f"%{category_name}%"
+
     category = db.query(models.CurriculumCategory).filter(
         models.CurriculumCategory.curriculum_id == student.curriculum_id,
-        models.CurriculumCategory.name.ilike(f"%{category_name}%")
+        models.CurriculumCategory.name.ilike(search_term)
     ).first()
 
     if not category:
