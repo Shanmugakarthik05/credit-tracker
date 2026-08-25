@@ -327,8 +327,8 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
                         db.refresh(oe_category)
                     
                     matched_category_id = oe_category.id
-                    match_type = models.MatchType.MANUAL
-                    review_status = models.ReviewStatus.ACCEPTED
+                    match_type = models.MatchType.POSSIBLE_MATCH
+                    review_status = models.ReviewStatus.REVIEW_REQUIRED
                 elif code_upper.startswith("M") and len(code_upper) >= 6 and not _is_mandatory_by_code:
                     if not minor_category:
                         minor_category = models.CurriculumCategory(
@@ -342,8 +342,8 @@ async def extract_result(file: UploadFile = File(...), db: Session = Depends(dat
                         db.refresh(minor_category)
                         
                     matched_category_id = minor_category.id
-                    match_type = models.MatchType.MANUAL
-                    review_status = models.ReviewStatus.ACCEPTED
+                    match_type = models.MatchType.POSSIBLE_MATCH
+                    review_status = models.ReviewStatus.REVIEW_REQUIRED
 
             mapped_results.append({
                 "course_code": raw["raw_code"],
