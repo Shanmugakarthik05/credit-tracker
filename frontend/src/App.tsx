@@ -17,6 +17,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<'curriculum' | 'performance'>('curriculum');
   const [activeModal, setActiveModal] = useState<'curriculum' | 'result' | 'online-curriculum' | 'open-elective' | 'minor-course' | null>(null);
   const [activeBreakdown, setActiveBreakdown] = useState<any>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({});
   const [hasMinorCourse, setHasMinorCourse] = useState<boolean>(
     () => localStorage.getItem('hasMinorCourse') === 'true'
   );
@@ -347,6 +348,48 @@ function App() {
                               </p>
                             )}
                           </div>
+
+                          {/* Completed / Failed subjects expandable list */}
+                          {((cat.completed_courses && cat.completed_courses.length > 0) || (cat.failed_courses && cat.failed_courses.length > 0)) && (
+                            <div className="mt-3">
+                              <button
+                                onClick={() => setExpandedCategories(prev => ({ ...prev, [cat.id]: !prev[cat.id] }))}
+                                className="flex items-center gap-1.5 text-xs font-bold text-indigo-500 hover:text-indigo-700 transition-colors w-full text-left"
+                              >
+                                <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedCategories[cat.id] ? 'rotate-90' : ''}`} />
+                                {expandedCategories[cat.id] ? 'Hide' : 'Show'} Subjects ({(cat.completed_courses?.length || 0) + (cat.failed_courses?.length || 0)})
+                              </button>
+
+                              {expandedCategories[cat.id] && (
+                                <div className="mt-3 space-y-1.5 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
+                                  {cat.completed_courses?.map((course: any, ci: number) => (
+                                    <div key={`pass-${ci}`} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-emerald-50/70 border border-emerald-100">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[11px] font-bold text-slate-700 truncate">{course.name}</p>
+                                        <p className="text-[10px] text-slate-400 font-mono">{course.code} · {course.semester}</p>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md">{course.grade}</span>
+                                        <span className="text-[10px] text-slate-500 font-semibold">{course.credits}cr</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {cat.failed_courses?.map((course: any, ci: number) => (
+                                    <div key={`fail-${ci}`} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-red-50/70 border border-red-100">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[11px] font-bold text-slate-700 truncate">{course.name}</p>
+                                        <p className="text-[10px] text-slate-400 font-mono">{course.code} · {course.semester}</p>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className="text-[10px] font-black text-red-600 bg-red-100 px-1.5 py-0.5 rounded-md">{course.grade}</span>
+                                        <span className="text-[10px] text-slate-500 font-semibold">{course.credits}cr</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

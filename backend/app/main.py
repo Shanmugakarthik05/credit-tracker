@@ -502,7 +502,9 @@ def get_dashboard_stats(db: Session = Depends(database.get_db), current_user: mo
             "completed_credits": 0,
             "failed_credits": 0,
             "extra_credits": 0,
-            "is_satisfied": False
+            "is_satisfied": False,
+            "completed_courses": [],
+            "failed_courses": []
         }
         
     completed_credits = 0
@@ -514,15 +516,29 @@ def get_dashboard_stats(db: Session = Depends(database.get_db), current_user: mo
         # Only count accepted matches to prevent double counting
         accepted_matches = [m for m in course.matches if m.review_status == models.ReviewStatus.ACCEPTED]
         
+        course_entry = {
+            "code": course.course_code,
+            "name": course.course_name,
+            "credits": course.credits,
+            "grade": course.grade,
+            "semester": course.semester,
+            "is_passed": course.is_passed
+        }
+        
         if course.is_passed:
             if accepted_matches:
                 # Count for category
                 cat_id = accepted_matches[0].category_id
                 if cat_id in category_stats:
                     category_stats[cat_id]["completed_credits"] += course.credits
+                    category_stats[cat_id]["completed_courses"].append(course_entry)
                 completed_credits += course.credits
         else:
             failed_credits += course.credits
+            if accepted_matches:
+                cat_id = accepted_matches[0].category_id
+                if cat_id in category_stats:
+                    category_stats[cat_id]["failed_courses"].append(course_entry)
 
     all_categories_satisfied = True
     for cat_id, stat in category_stats.items():
