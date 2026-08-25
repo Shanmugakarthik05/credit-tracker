@@ -46,13 +46,13 @@ def extract_curriculum_from_pdf(file_path: str) -> Dict[str, Any]:
                         continue
                         
                     lower_row = [c.lower() for c in clean_row]
-                    if "course title" in lower_row or "course name" in lower_row or "subject" in lower_row or "course code" in lower_row:
+                    if any("title" in c or "name" in c or "subject" in c or "code" in c for c in lower_row):
                         header_row = lower_row
                         for idx, cell in enumerate(lower_row):
                             if "category" in cell: cat_idx = idx
                             elif "code" in cell and code_idx == -1: code_idx = idx
                             elif "title" in cell or "name" in cell or "subject" in cell: name_idx = idx
-                            elif "total credit" in cell or cell == "c" or cell == "credits": c_idx = idx
+                            elif "total credit" in cell or cell == "c" or "credits" in cell or "credit" in cell: c_idx = idx
                         continue
                     
                     populated = [c for c in clean_row if c]
@@ -119,15 +119,16 @@ def extract_curriculum_from_pdf(file_path: str) -> Dict[str, Any]:
                                 row_category = "Others"
                                 
                             mandatory = "elective" not in row_category.lower()
-                            subjects.append({
-                                "course_code": code,
-                                "course_name": name,
-                                "credits": credits,
-                                "category": row_category,
-                                "mandatory": mandatory,
-                                "elective": not mandatory,
-                                "prerequisites": None
-                            })
+                            if not any(s['course_code'] == code for s in subjects):
+                                subjects.append({
+                                    "course_code": code,
+                                    "course_name": name,
+                                    "credits": credits,
+                                    "category": row_category,
+                                    "mandatory": mandatory,
+                                    "elective": not mandatory,
+                                    "prerequisites": None
+                                })
                             categories_set.add(row_category)
     categories_set = {cat for cat in categories_set if cat.strip()}
     categories_dict = {cat: {"name": category_map.get(cat, cat), "required_credits": 0, "minimum_courses": None, "maximum_courses": None, "description": None, "courses": []} for cat in categories_set}
@@ -240,7 +241,7 @@ def extract_result_from_pdf(file_path: str) -> List[Dict[str, Any]]:
                         if not raw_name:
                             raw_name = clean_row[1] if len(clean_row) > 2 and clean_row[1] != raw_code else "Unknown"
                             
-                        is_passed = grade.upper() not in ['U', 'F', 'RA', 'W', 'ABSENT', 'FAIL']
+                        is_passed = grade.upper() not in ['U', 'F', 'RA', 'W', 'ABSENT', 'FAIL', 'AB', 'SA', 'WH', 'I', 'INCOMPLETE', 'NE']
                         
                         results.append({
                             "semester": semester,
@@ -328,5 +329,60 @@ def extract_online_curriculum_from_pdf(file_path: str) -> List[Dict[str, Any]]:
                                 "elective": True
                             })
                             
+    return courses
+
+def extract_special_curriculum_from_pdf(file_path: str) -> List[Dict[str, Any]]:
+    courses = []
+    
+    with pdfplumber.open(file_path) as pdf:
+        for page in pdf.pages:
+            tables = page.extract_tables()
+            for table in tables:
+                code_idx = -1
+                title_idx = -1
+                credit_idx = -1
+                
+                for row in table:
+                    clean_row = [str(cell).strip().replace('\n', ' ') if cell else "" for cell in row]
+                    if not any(clean_row): continue
+                    
+                    lower_row = [c.lower() for c in clean_row]
+                    
+                    # Detect headers
+                    if "course title" in lower_row or "title" in lower_row:
+                        for i, cell in enumerate(lower_row):
+                            if "r2019" in cell: code_idx = i
+                            elif "code" in cell and code_idx == -1: code_idx = i
+                            elif "title" in cell: title_idx = i
+                            elif "total" in cell and "credit" in cell: credit_idx = i
+                            elif "credits" == cell and credit_idx == -1: credit_idx = i
+                            elif "credit" in cell and credit_idx == -1: credit_idx = i
+                        
+                        # Fallback for code if R2019 missing but R2024 present
+                        if code_idx == -1:
+                            for i, cell in enumerate(lower_row):
+                                if "r2024" in cell: code_idx = i
+                        continue
+                        
+                    # If we have headers, extract
+                    if code_idx != -1 and title_idx != -1 and credit_idx != -1 and len(clean_row) > max(code_idx, title_idx, credit_idx):
+                        code = clean_row[code_idx]
+                        title = clean_row[title_idx]
+                        credits_str = clean_row[credit_idx]
+                        
+                        credits = 3
+                        if credits_str.isdigit():
+                            credits = int(credits_str)
+                            
+                        if code and title and len(code) >= 5 and code.upper() != "NA":
+                            if not any(c['course_code'] == code for c in courses):
+                                courses.append({
+                                    "course_code": code,
+                                    "course_name": title,
+                                    "credits": credits,
+                                    "mandatory": False,
+                                    "elective": True
+                                })
+                                
     return courses
 

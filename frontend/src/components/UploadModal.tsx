@@ -107,9 +107,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, title
     setLoading(true);
     setError(null);
     try {
-      const isOnline = endpoint === 'online-curriculum';
+      const isOnline = endpoint === 'online-curriculum' || endpoint === 'open-elective' || endpoint === 'minor-course';
+      let saveEndpointPath = '/api/curriculums';
+      if (endpoint === 'open-elective') saveEndpointPath = '/api/curriculums/open-elective';
+      else if (endpoint === 'minor-course') saveEndpointPath = '/api/curriculums/minor-course';
+      else if (endpoint === 'online-curriculum') saveEndpointPath = '/api/curriculums/online';
+
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const saveRes = await fetch(isOnline ? `${apiUrl}/api/curriculums/online` : `${apiUrl}/api/curriculums`, {
+      const saveRes = await fetch(`${apiUrl}${saveEndpointPath}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(isOnline ? parsedData.categories[0].courses : parsedData),

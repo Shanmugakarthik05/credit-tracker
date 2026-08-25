@@ -77,7 +77,7 @@ async def extract_online_curriculum(file: UploadFile = File(...), current_user: 
             "last_page_analysed": True,
             "categories": [
                 {
-                    "name": "Open Elective (Online)",
+                    "name": "Open Electives",
                     "required_credits": 0,
                     "courses": courses
                 }
@@ -88,25 +88,80 @@ async def extract_online_curriculum(file: UploadFile = File(...), current_user: 
             os.remove(temp_file)
     return data
 
-@app.post("/api/curriculums/online")
-def create_online_curriculum(courses: List[schemas.CurriculumCourseCreate], db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+@app.post("/api/extract/open-elective")
+async def extract_open_elective(file: UploadFile = File(...), current_user: models.User = Depends(auth.get_current_user)):
+    temp_file = f"/tmp/temp_oe_{file.filename}"
+    with open(temp_file, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    try:
+        courses = pdf_extractor.extract_special_curriculum_from_pdf(temp_file)
+        data = {
+            "department": "Open Elective",
+            "program": "Approved Courses",
+            "regulation": "N/A",
+            "total_required_credits": 0,
+            "pages_analysed": 1,
+            "last_page_analysed": True,
+            "categories": [
+                {
+                    "name": "Open Electives",
+                    "required_credits": 0,
+                    "courses": courses
+                }
+            ]
+        }
+    finally:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+    return data
+
+@app.post("/api/extract/minor-course")
+async def extract_minor_course(file: UploadFile = File(...), current_user: models.User = Depends(auth.get_current_user)):
+    temp_file = f"/tmp/temp_minor_{file.filename}"
+    with open(temp_file, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    try:
+        courses = pdf_extractor.extract_special_curriculum_from_pdf(temp_file)
+        data = {
+            "department": "Minor Degree",
+            "program": "Approved Courses",
+            "regulation": "N/A",
+            "total_required_credits": 0,
+            "pages_analysed": 1,
+            "last_page_analysed": True,
+            "categories": [
+                {
+                    "name": "Minor Courses",
+                    "required_credits": 0,
+                    "courses": courses
+                }
+            ]
+        }
+    finally:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+    return data
+
+def save_special_curriculum(courses: List[schemas.CurriculumCourseCreate], category_name: str, category_desc: str, db: Session, current_user: models.User):
     student = db.query(models.Student).filter(models.Student.user_id == current_user.id).first()
     if not student or not student.curriculum_id:
         raise HTTPException(status_code=404, detail="Student or Curriculum not found")
 
     category = db.query(models.CurriculumCategory).filter(
         models.CurriculumCategory.curriculum_id == student.curriculum_id,
-        models.CurriculumCategory.name.ilike("%Open Elective%")
+        models.CurriculumCategory.name.ilike(f"%{category_name}%")
     ).first()
 
     if not category:
         category = models.CurriculumCategory(
             curriculum_id=student.curriculum_id,
-            name="Open Electives",
-            required_credits=12,
+            name=category_name,
+            required_credits=12 if "Open" in category_name else 18,
             minimum_courses=None,
             maximum_courses=None,
-            description="Online and Open Elective Courses"
+            description=category_desc
         )
         db.add(category)
         db.commit()
@@ -130,7 +185,19 @@ def create_online_curriculum(courses: List[schemas.CurriculumCourseCreate], db: 
             )
             db.add(db_course)
     db.commit()
-    return {"message": "Online curriculum saved successfully"}
+    return {"message": f"{category_name} saved successfully"}
+
+@app.post("/api/curriculums/online")
+def create_online_curriculum(courses: List[schemas.CurriculumCourseCreate], db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    return save_special_curriculum(courses, "Open Electives", "Online and Open Elective Courses", db, current_user)
+
+@app.post("/api/curriculums/open-elective")
+def create_open_elective(courses: List[schemas.CurriculumCourseCreate], db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    return save_special_curriculum(courses, "Open Electives", "Open Elective Courses", db, current_user)
+
+@app.post("/api/curriculums/minor-course")
+def create_minor_course(courses: List[schemas.CurriculumCourseCreate], db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    return save_special_curriculum(courses, "Minor Courses", "Minor Degree Courses", db, current_user)
 
 @app.post("/api/extract/result")
 async def extract_result(file: UploadFile = File(...), db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
@@ -315,6 +382,15 @@ def create_result(results: List[schemas.StudentCourseCreate], db: Session = Depe
         raise HTTPException(status_code=404, detail="Student profile not found")
         
     for res_data in results:
+        existing = db.query(models.StudentCourse).filter(
+            models.StudentCourse.student_id == student.id,
+            models.StudentCourse.course_code == res_data.course_code,
+            models.StudentCourse.semester == res_data.semester
+        ).first()
+        
+        if existing:
+            continue
+            
         db_course = models.StudentCourse(
             student_id=student.id,
             course_code=res_data.course_code,

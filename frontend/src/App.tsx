@@ -15,7 +15,7 @@ function App() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'curriculum' | 'performance'>('curriculum');
-  const [activeModal, setActiveModal] = useState<'curriculum' | 'result' | 'online-curriculum' | null>(null);
+  const [activeModal, setActiveModal] = useState<'curriculum' | 'result' | 'online-curriculum' | 'open-elective' | 'minor-course' | null>(null);
   const [activeBreakdown, setActiveBreakdown] = useState<any>(null);
 
   const fetchStats = React.useCallback(async () => {
@@ -96,6 +96,20 @@ function App() {
             >
               <Upload className="w-4 h-4 text-emerald-400" />
               <span className="hidden lg:inline">Online Curriculum</span>
+            </button>
+            <button
+              onClick={() => setActiveModal('open-elective')}
+              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50/50 transition-all duration-200"
+            >
+              <BookOpen className="w-4 h-4 text-amber-400" />
+              <span className="hidden lg:inline">OE PDF</span>
+            </button>
+            <button
+              onClick={() => setActiveModal('minor-course')}
+              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:border-rose-300 hover:text-rose-700 hover:bg-rose-50/50 transition-all duration-200"
+            >
+              <FileCheck className="w-4 h-4 text-rose-400" />
+              <span className="hidden lg:inline">Minor PDF</span>
             </button>
             <button
               onClick={() => setActiveModal('result')}
@@ -479,6 +493,8 @@ function App() {
       <UploadModal isOpen={activeModal === 'curriculum'} onClose={() => setActiveModal(null)} title="Upload Curriculum PDF" endpoint="curriculum" token={token ?? ''} logout={logout} onSuccess={() => fetchStats()} />
       <UploadModal isOpen={activeModal === 'result'} onClose={() => setActiveModal(null)} title="Upload Semester Result" endpoint="result" token={token ?? ''} logout={logout} onSuccess={() => fetchStats()} />
       <UploadModal isOpen={activeModal === 'online-curriculum'} onClose={() => setActiveModal(null)} title="Upload Online Curriculum" endpoint="online-curriculum" token={token ?? ''} logout={logout} onSuccess={() => fetchStats()} />
+      <UploadModal isOpen={activeModal === 'open-elective'} onClose={() => setActiveModal(null)} title="Upload Open Elective PDF" endpoint="open-elective" token={token ?? ''} logout={logout} onSuccess={() => fetchStats()} />
+      <UploadModal isOpen={activeModal === 'minor-course'} onClose={() => setActiveModal(null)} title="Upload Minor Course PDF" endpoint="minor-course" token={token ?? ''} logout={logout} onSuccess={() => fetchStats()} />
       <CalculationBreakdownModal isOpen={activeBreakdown !== null} onClose={() => setActiveBreakdown(null)} semesterData={activeBreakdown} />
 
       <Chatbot />
