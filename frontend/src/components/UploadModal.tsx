@@ -205,7 +205,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, title
         </div>
 
         {/* ── Body ─────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-7 py-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-7 py-4 custom-scrollbar" style={{ minHeight: 0 }}>
           {!parsedData ? (
             <div className="space-y-5">
               {/* Semester selector */}
@@ -304,7 +304,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, title
 
         {/* ── Footer ───────────────────────────── */}
         {(!parsedData || endpoint === 'curriculum' || endpoint === 'online-curriculum' || endpoint === 'open-elective' || endpoint === 'minor-course') && (
-          <div className="px-7 py-5 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-3xl">
+          <div className="shrink-0 px-7 py-5 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-3xl">
             <button
               onClick={onClose}
               className="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all"
