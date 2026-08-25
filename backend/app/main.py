@@ -429,11 +429,18 @@ def create_result(results: List[schemas.StudentCourseCreate], db: Session = Depe
         existing = db.query(models.StudentCourse).filter(
             models.StudentCourse.student_id == student.id,
             models.StudentCourse.course_code == res_data.course_code,
-            models.StudentCourse.semester == res_data.semester
         ).first()
         
         if existing:
+            # Update grade if the new upload has a better/different grade (re-appeared student)
+            if existing.grade != res_data.grade:
+                existing.grade = res_data.grade
+                existing.is_passed = res_data.is_passed
+                if res_data.semester:
+                    existing.semester = res_data.semester
+                db.commit()
             continue
+
             
         db_course = models.StudentCourse(
             student_id=student.id,

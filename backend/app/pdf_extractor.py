@@ -186,72 +186,129 @@ def extract_curriculum_from_pdf(file_path: str) -> Dict[str, Any]:
         "categories": list(categories_dict.values())
     }
 
+
 def extract_result_from_pdf(file_path: str) -> List[Dict[str, Any]]:
     results = []
-    subject_code_pattern = re.compile(r"^[A-Z0-9]{5,10}$")
-    
+    subject_code_pattern = re.compile(r"^[A-Z]{2,5}[0-9]{3,6}$")
+    grade_set = {'O', 'A+', 'A', 'B+', 'B', 'C', 'U', 'F', 'RA', 'W', 'ABSENT', 'AB', 'SA', 'WH', 'I', 'PASS', 'FAIL', 'NE'}
+    semester_pattern = re.compile(r'(?:semester|sem)[\s\-:]*(\d+)', re.IGNORECASE)
+    fail_grades = {'U', 'F', 'RA', 'W', 'ABSENT', 'FAIL', 'AB', 'SA', 'WH', 'I', 'INCOMPLETE', 'NE'}
+
+    current_semester = None
+    code_idx = name_idx = credit_idx = grade_idx = -1
+
     with pdfplumber.open(file_path) as pdf:
         for page in pdf.pages:
+            # Scan raw page text for semester markers first
+            text = page.extract_text() or ""
+            for line in text.splitlines():
+                m = semester_pattern.search(line)
+                if m:
+                    current_semester = f"Semester {m.group(1)}"
+                    break
+
             tables = page.extract_tables()
             for table in tables:
+                # Reset column detection per table
+                code_idx = name_idx = credit_idx = grade_idx = -1
+
                 for row in table:
-                    clean_row = [str(cell).strip() if cell else "" for cell in row]
-                    if len(clean_row) < 3: continue
-                        
-                    semester = None
+                    if not row: continue
+                    clean_row = [str(cell).strip().replace('\n', ' ') if cell else "" for cell in row]
+                    if not any(clean_row): continue
+
+                    row_text = " ".join(clean_row)
+
+                    # Semester detection from row text
+                    m = semester_pattern.search(row_text)
+                    if m:
+                        current_semester = f"Semester {m.group(1)}"
+                        continue
+
+                    # Header detection: find column positions
+                    lower = [c.lower() for c in clean_row]
+                    if any("course" in c or "subject" in c or "code" in c for c in lower):
+                        code_idx = name_idx = credit_idx = grade_idx = -1
+                        for i, c in enumerate(lower):
+                            if ("code" in c or "r2019" in c or "r2024" in c) and code_idx == -1:
+                                code_idx = i
+                            elif ("title" in c or "name" in c or "subject" in c) and name_idx == -1:
+                                name_idx = i
+                            elif ("credit" in c) and credit_idx == -1:
+                                credit_idx = i
+                            elif "grade" in c and grade_idx == -1:
+                                grade_idx = i
+                        continue
+
+                    # Data row extraction
                     raw_code = None
                     raw_name = None
+                    credits = 0
                     grade = None
-                    is_passed = False
-                    
-                    if clean_row[0] and clean_row[0].strip().upper() not in ["SEMESTER", "S.NO", "NO."]:
-                        semester = clean_row[0].strip()
-                    
-                    for cell in clean_row:
-                        if "-" in cell:
-                            parts = cell.split("-", 1)
-                            if subject_code_pattern.match(parts[0].strip().upper()) and parts[0].strip().upper() != "SEMESTER":
-                                raw_code = parts[0].strip().upper()
-                                raw_name = parts[1].strip()
-                        elif subject_code_pattern.match(cell.strip().upper()) and not raw_code and cell.strip().upper() != "SEMESTER":
-                            raw_code = cell.strip().upper()
-                            
-                    if raw_code:
-                        letter_grades = ['O', 'A+', 'A', 'B+', 'B', 'C', 'U', 'F', 'RA', 'W', 'ABSENT']
-                        pass_fail = ['PASS', 'FAIL']
-                        
-                        for cell in reversed(clean_row):
-                            if cell.upper() in letter_grades:
-                                grade = cell.upper()
-                                break
-                                
-                        if not grade:
-                            for cell in reversed(clean_row):
-                                if cell.upper() in pass_fail:
-                                    grade = cell.upper()
-                                    break
-                        
-                        credits = 0
+
+                    if code_idx != -1 and code_idx < len(clean_row):
+                        candidate = clean_row[code_idx].strip().upper()
+                        if subject_code_pattern.match(candidate):
+                            raw_code = candidate
+
+                    if name_idx != -1 and name_idx < len(clean_row):
+                        raw_name = clean_row[name_idx].strip()
+
+                    if credit_idx != -1 and credit_idx < len(clean_row):
+                        val = clean_row[credit_idx].strip()
+                        if val.isdigit() and 1 <= int(val) <= 10:
+                            credits = int(val)
+
+                    if grade_idx != -1 and grade_idx < len(clean_row):
+                        candidate = clean_row[grade_idx].strip().upper()
+                        if candidate in grade_set:
+                            grade = candidate
+
+                    # Fallback: scan whole row
+                    if not raw_code:
                         for cell in clean_row:
-                            if cell.isdigit() and 1 <= int(cell) <= 10:
-                                credits = int(cell)
-                                
-                        if not grade: grade = clean_row[-2] if len(clean_row) >= 2 else "Unknown"
-                            
+                            c = cell.strip().upper()
+                            if subject_code_pattern.match(c):
+                                raw_code = c
+                                break
+
+                    if not grade:
+                        for cell in reversed(clean_row):
+                            c = cell.strip().upper()
+                            if c in grade_set:
+                                grade = c
+                                break
+
+                    if credits == 0:
+                        for cell in clean_row:
+                            c = cell.strip()
+                            if c.isdigit() and 1 <= int(c) <= 10:
+                                credits = int(c)
+
+                    if not raw_name and raw_code:
+                        for cell in clean_row:
+                            c = cell.strip()
+                            if c and c.upper() != raw_code and c.upper() not in grade_set and not c.isdigit() and len(c) > 5:
+                                raw_name = c
+                                break
+
+                    if raw_code and grade:
                         if not raw_name:
-                            raw_name = clean_row[1] if len(clean_row) > 2 and clean_row[1] != raw_code else "Unknown"
-                            
-                        is_passed = grade.upper() not in ['U', 'F', 'RA', 'W', 'ABSENT', 'FAIL', 'AB', 'SA', 'WH', 'I', 'INCOMPLETE', 'NE']
-                        
+                            raw_name = "Unknown"
+                        is_passed = grade.upper() not in fail_grades
                         results.append({
-                            "semester": semester,
+                            "semester": current_semester,
                             "raw_code": raw_code,
                             "raw_name": raw_name,
                             "grade": grade,
                             "credits": credits,
                             "is_passed": is_passed
                         })
+
     return results
+
+
+
 
 def fuzzy_match_subject(raw_name: str, raw_code: str, curriculum_courses: List[Dict]) -> Tuple[Dict, float, List[Dict]]:
     """
