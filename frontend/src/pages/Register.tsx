@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { GraduationCap, Mail, Lock, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
@@ -24,6 +25,7 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const strength = getPasswordStrength(password);
 
@@ -41,7 +43,22 @@ export default function Register() {
 
       if (res.ok) {
         setSuccess(true);
-        setTimeout(() => navigate('/login'), 1600);
+        // Auto-login: get token right after registration so user doesn't need to re-enter credentials
+        const loginForm = new URLSearchParams();
+        loginForm.append('username', email);
+        loginForm.append('password', password);
+        const loginRes = await fetch(`${apiUrl}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: loginForm,
+        });
+        if (loginRes.ok) {
+          const tokenData = await loginRes.json();
+          login(tokenData.access_token);
+          setTimeout(() => navigate('/'), 1000);
+        } else {
+          setTimeout(() => navigate('/login'), 1600);
+        }
       } else {
         const errData = await res.json();
         setError(errData.detail || 'Registration failed');
@@ -135,7 +152,7 @@ export default function Register() {
                 <CheckCircle2 className="w-10 h-10 text-emerald-400" />
               </div>
               <h2 className="text-2xl font-black text-white mb-2">Account created!</h2>
-              <p className="text-slate-400 text-sm">Redirecting you to sign in...</p>
+              <p className="text-slate-400 text-sm">Signing you in automatically...</p>
               <div className="mt-6 h-1 bg-slate-800 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 rounded-full animate-[grow_1.6s_linear_forwards]" style={{ width: '100%', animation: 'shimmer 1.6s linear forwards' }} />
               </div>

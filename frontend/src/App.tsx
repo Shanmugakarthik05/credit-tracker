@@ -17,6 +17,15 @@ function App() {
   const [activeTab, setActiveTab] = useState<'curriculum' | 'performance'>('curriculum');
   const [activeModal, setActiveModal] = useState<'curriculum' | 'result' | 'online-curriculum' | 'open-elective' | 'minor-course' | null>(null);
   const [activeBreakdown, setActiveBreakdown] = useState<any>(null);
+  const [hasMinorCourse, setHasMinorCourse] = useState<boolean>(
+    () => localStorage.getItem('hasMinorCourse') === 'true'
+  );
+
+  const toggleMinorCourse = () => {
+    const next = !hasMinorCourse;
+    setHasMinorCourse(next);
+    localStorage.setItem('hasMinorCourse', String(next));
+  };
 
   const fetchStats = React.useCallback(async () => {
     setLoading(true);
@@ -104,13 +113,32 @@ function App() {
               <BookOpen className="w-4 h-4 text-amber-400" />
               <span className="hidden lg:inline">OE PDF</span>
             </button>
-            <button
-              onClick={() => setActiveModal('minor-course')}
-              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:border-rose-300 hover:text-rose-700 hover:bg-rose-50/50 transition-all duration-200"
-            >
-              <FileCheck className="w-4 h-4 text-rose-400" />
-              <span className="hidden lg:inline">Minor PDF</span>
-            </button>
+
+            {/* Minor Course: optional toggle */}
+            <div className="hidden md:flex items-center gap-2">
+              <button
+                onClick={toggleMinorCourse}
+                title={hasMinorCourse ? 'Disable Minor Course' : 'I have a Minor Course'}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-all duration-200 ${
+                  hasMinorCourse
+                    ? 'bg-rose-50 border-rose-300 text-rose-700'
+                    : 'bg-white border-slate-200 text-slate-400 hover:border-rose-200 hover:text-rose-500'
+                }`}
+              >
+                <FileCheck className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Minor</span>
+                <span className={`w-2 h-2 rounded-full ml-0.5 ${hasMinorCourse ? 'bg-rose-500' : 'bg-slate-300'}`} />
+              </button>
+              {hasMinorCourse && (
+                <button
+                  onClick={() => setActiveModal('minor-course')}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-rose-700 bg-rose-50 border border-rose-300 rounded-xl hover:bg-rose-100 transition-all duration-200"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">Upload Minor PDF</span>
+                </button>
+              )}
+            </div>
             <button
               onClick={() => setActiveModal('result')}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl shadow-md shadow-indigo-200 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
