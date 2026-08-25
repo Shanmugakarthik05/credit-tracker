@@ -277,7 +277,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, title
             </div>
           ) : (
             <div className="animate-in slide-in-from-bottom-4 duration-300 w-full h-full">
-              {endpoint === 'curriculum' || endpoint === 'online-curriculum' ? (
+              {endpoint === 'curriculum' || endpoint === 'online-curriculum' || endpoint === 'open-elective' || endpoint === 'minor-course' ? (
                 <div className="space-y-5">
                   <CurriculumAudit data={parsedData} />
                   {error && (
